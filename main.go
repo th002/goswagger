@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strings"
 
 	"github.com/th002/goswagger/swagger"
 )
@@ -24,9 +25,11 @@ func main() {
 		fmt.Printf("go-swagger verison:%s\nswagger version:%s\ngo version:%s\n", Version, swagger.SwaggerVersion, runtime.Version())
 		return
 	}
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	ignores := strings.Split(*ignore, ";")
 	params := swagger.Params{
 		OutputPath:  *outPutPath,
-		Ignore:      *ignore,
+		Ignore:      ignores,
 		APIPackage:  *apiPackage,
 		MainAPIFile: *mainFile,
 	}

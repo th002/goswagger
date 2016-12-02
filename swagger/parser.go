@@ -28,7 +28,7 @@ type Parser struct {
 	PackageImports                    map[string]map[string][]string
 	BasePath                          string
 	ControllerClass                   string
-	Ignore                            string
+	Ignore                            []string
 	IsController                      func(*ast.FuncDecl, string) bool
 	TypesImplementingMarshalInterface map[string]string
 }
@@ -229,7 +229,6 @@ func (parser *Parser) CheckRealPackagePath(packagePath string) string {
 	if cachedResult, ok := parser.PackagePathCache[packagePath]; ok {
 		return cachedResult
 	}
-
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
 		log.Fatalf("Please, set $GOPATH environment variable\n")
@@ -239,7 +238,7 @@ func (parser *Parser) CheckRealPackagePath(packagePath string) string {
 	pkgRealpath := ""
 	gopathsList := filepath.SplitList(gopath)
 	for _, path := range gopathsList {
-		if evalutedPath, err := filepath.EvalSymlinks(filepath.Join("vendor", packagePath)); err == nil {
+		if evalutedPath, err := filepath.EvalSymlinks(filepath.Join(path, "src", "vendor", packagePath)); err == nil {
 			if _, err := os.Stat(evalutedPath); err == nil {
 				pkgRealpath = evalutedPath
 				break
@@ -280,6 +279,13 @@ func (parser *Parser) CheckRealPackagePath(packagePath string) string {
 //GetRealPackagePath get package real path
 func (parser *Parser) GetRealPackagePath(packagePath string) string {
 	//fmt.Println("GetRealPackagePath", packagePath)
+	matched, err := regexp.MatchString("golang_org", packagePath)
+	if err != nil {
+		return ""
+	}
+	if matched {
+		packagePath = strings.Replace(packagePath, "golang_org", "golang.org", 1)
+	}
 	pkgRealpath := parser.CheckRealPackagePath(packagePath)
 	if pkgRealpath == "" {
 		// log.Fatalf("Can not find package %s \n", packagePath)
@@ -406,11 +412,14 @@ func (parser *Parser) FindModelDefinition(modelName string, currentPackage strin
 
 func (parser *Parser) isIgnoredPackage(packageName string) bool {
 	r, _ := regexp.Compile("appengine+")
-	matched, err := regexp.MatchString(parser.Ignore, packageName)
-	if err != nil {
-		log.Fatalf("The -ignore argument is not a valid regular expression: %v\n", err)
+	for _, ignore := range parser.Ignore {
+		matched, err := regexp.MatchString(ignore, packageName)
+		if err != nil {
+			log.Fatalf("The -ignore argument is not a valid regular expression: %v\n", err)
+		}
+		return packageName == "C" || r.MatchString(packageName) || matched
 	}
-	return packageName == "C" || r.MatchString(packageName) || matched
+	return false
 }
 
 //IsImplementMarshalInterface 判断是否实现marshal接口

@@ -33,7 +33,7 @@ func IsController(funcDeclaration *ast.FuncDecl, controllerClass string) bool {
 }
 
 //InitParser init a go source parser
-func InitParser(controllerClass, ignore string) *Parser {
+func InitParser(controllerClass string, ignore []string) *Parser {
 	parser := NewParser()
 
 	parser.ControllerClass = controllerClass
@@ -55,7 +55,7 @@ type Params struct {
 	OutputFormat    string
 	OutputPath      string
 	ControllerClass string
-	Ignore          string
+	Ignore          []string
 }
 
 //Run start parse go source
@@ -95,8 +95,8 @@ func Run(params Params) error {
 		return errors.New("empty out put path")
 	}
 
-	if params.Ignore == "" {
-		params.Ignore = "swagger"
+	if len(params.Ignore) == 0 {
+		params.Ignore = []string{"swagger"}
 	}
 
 	parser := InitParser(params.ControllerClass, params.Ignore)
